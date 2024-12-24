@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 
+from dotenv import load_dotenv
 from langchain import hub
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_openai import AzureChatOpenAI
@@ -9,36 +10,29 @@ from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from st_callable_util import get_streamlit_cb
 
+load_dotenv()
 
 ### Page initialization ###
 st.set_page_config(page_title="SQL Agent Chat", page_icon="🗁⌨")
 st.title("🗁⌨ SQl DB Agent")
 
 
-### GLOBAL VARIABLES ###
-DATABASE_USER = 'serveradmin'
-USER_PASSWORD = 'TestUnilever1!'
-DATABASE_ENDPOINT = 'prdunileverdatabase.mysql.database.azure.com'
-DATABASE_SCHEMA = 'transactional_data'
+# ### GLOBAL VARIABLES ###
+DATABASE_USER = os.getenv("DATABASE_USER")
+USER_PASSWORD = os.getenv("USER_PASSWORD")
+DATABASE_ENDPOINT = os.getenv("DATABASE_ENDPOINT")
+DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA")
 
-AZURE_DEPLOYMENT = 'gpt-4o-mini'
-AZURE_OPENAI_API_VERSION = '2024-08-01-preview'
-AZURE_OPENAI_API_KEY = 'DJSInhXbnuV08lkSHlCihDnQMG2VkZMCdTiCP2l3H4xcushxL88mJQQJ99ALACYeBjFXJ3w3AAABACOGZqoB'
-AZURE_ENDPOINT = 'https://unilever-poc-openai.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2024-08-01-preview'
-
-mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER, 
-                                                             USER_PASSWORD, 
-                                                             DATABASE_ENDPOINT, 
-                                                             DATABASE_SCHEMA)
+mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  # type: ignore
+                                                             USER_PASSWORD,  # type: ignore
+                                                             DATABASE_ENDPOINT, # type: ignore
+                                                             DATABASE_SCHEMA)   # type: ignore
 
 
 ### CONFIGURATIONS ###
 db = SQLDatabase.from_uri(mysql_uri)
 
-llm = AzureChatOpenAI(azure_deployment=AZURE_DEPLOYMENT,  
-                      api_version=AZURE_OPENAI_API_VERSION,   
-                      api_key=AZURE_OPENAI_API_KEY,    
-                      azure_endpoint=AZURE_ENDPOINT)
+llm = AzureChatOpenAI(temperature=0)
 
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 tools = toolkit.get_tools()
