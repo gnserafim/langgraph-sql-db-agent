@@ -1,0 +1,10 @@
+langchain==0.3.13
+langchain-community==0.3.13
+langchain-core==0.3.28
+langchain-openai==0.2.14
+langchainhub==0.1.21
+langgraph==0.2.60
+mysqlclient==2.2.6
+mysql-connector-python==9.1.0
+python-dotenv==1.0.1
+streamlit==1.41.1
