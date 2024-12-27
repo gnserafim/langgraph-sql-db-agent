@@ -68,9 +68,7 @@ DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA")
 mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  
                                                              USER_PASSWORD,  
                                                              DATABASE_ENDPOINT, 
-                                                             DATABASE_SCHEMA)
-
-st.write(mysql_uri)
+                                                             DATABASE_SCHEMA)   
 
 
 agent = initial_loading(mysql_uri)
