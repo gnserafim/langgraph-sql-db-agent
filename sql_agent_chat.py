@@ -11,7 +11,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 
-load_dotenv()
+#load_dotenv()
 
 ### Page initialization ###
 st.set_page_config(page_title="SQL Agent Chat", page_icon="🗁⌨")
@@ -60,15 +60,15 @@ def initial_loading(database_uri):
     return agent
 
 ### Objects initialization ###
-DATABASE_USER = os.getenv("DATABASE_USER")
-USER_PASSWORD = os.getenv("USER_PASSWORD")
-DATABASE_ENDPOINT = os.getenv("DATABASE_ENDPOINT")
-DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA")
+DATABASE_USER = st.secrets["DATABASE_USER"]
+USER_PASSWORD = st.secrets["USER_PASSWORD"]
+DATABASE_ENDPOINT = st.secrets["DATABASE_ENDPOINT"]
+DATABASE_SCHEMA = st.secrets["DATABASE_SCHEMA"]
 
 mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  
                                                              USER_PASSWORD,  
                                                              DATABASE_ENDPOINT, 
-                                                             DATABASE_SCHEMA)   
+                                                             DATABASE_SCHEMA)
 
 
 agent = initial_loading(mysql_uri)
