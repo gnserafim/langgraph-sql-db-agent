@@ -5,51 +5,77 @@ from dotenv import load_dotenv
 from langchain import hub
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_openai import AzureChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
-from st_callable_util import get_streamlit_cb
 
 load_dotenv()
 
 ### Page initialization ###
 st.set_page_config(page_title="SQL Agent Chat", page_icon="🗁⌨")
 st.title("🗁⌨ SQl DB Agent")
+st.write("---")
+st.write("")
+
+### Functions ###
+def build_react_sql_agent(sql_database: SQLDatabase,
+                          temperature: float=0.0) -> CompiledStateGraph:
+    
+    llm = AzureChatOpenAI(temperature=temperature)
+
+    toolkit = SQLDatabaseToolkit(db=sql_database, llm=llm)
+    tools = toolkit.get_tools()
+    dialect = toolkit.dialect
+
+    system_message = (hub
+                     .pull("langchain-ai/sql-agent-system-prompt")
+                     .format(dialect=dialect, top_k=5)
+                     )
+
+    return create_react_agent(llm, 
+                              tools, 
+                              state_modifier=system_message,
+                              checkpointer=MemorySaver())
+
+def run_agent(user_query: str,
+              agent: CompiledStateGraph, 
+              stream_mode: str) -> dict:
+
+    config = {"configurable": {"thread_id": "only_one_thread"}}
+
+    return agent.invoke({"messages": [{"role": "user",
+                                       'content': user_query}]},
+                        stream_mode=stream_mode,
+                        config=config)
 
 
-# ### GLOBAL VARIABLES ###
+@st.cache_resource(show_spinner = False)
+def initial_loading(database_uri):
+    with st.spinner("Loading Database and initializing agent..."):
+        db = SQLDatabase.from_uri(database_uri)
+        agent = build_react_sql_agent(db)
+
+    return agent
+
+### Objects initialization ###
 DATABASE_USER = os.getenv("DATABASE_USER")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
 DATABASE_ENDPOINT = os.getenv("DATABASE_ENDPOINT")
 DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA")
 
-mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  # type: ignore
-                                                             USER_PASSWORD,  # type: ignore
-                                                             DATABASE_ENDPOINT, # type: ignore
-                                                             DATABASE_SCHEMA)   # type: ignore
+mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  
+                                                             USER_PASSWORD,  
+                                                             DATABASE_ENDPOINT, 
+                                                             DATABASE_SCHEMA)   
 
 
-### CONFIGURATIONS ###
-db = SQLDatabase.from_uri(mysql_uri)
-
-llm = AzureChatOpenAI(temperature=0)
-
-toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-tools = toolkit.get_tools()
-
-system_message = (hub
-                 .pull("langchain-ai/sql-agent-system-prompt")
-                 .format(dialect=db.dialect, top_k=5))
-
-agent_executor = create_react_agent(llm, 
-                                    tools, 
-                                    state_modifier=system_message)
-
+agent = initial_loading(mysql_uri)
 intro_msg = "Hi! I'm your SQL Assistent. What would you like to know?"
 
 ### Chat Initialization ###
-
-if "messages" not in st.session_state or st.sidebar.button("Clear message history"):
+if "messages" not in st.session_state:
     st.session_state["messages"] = [AIMessage(content=intro_msg)]
 
 for msg in st.session_state.messages:
@@ -58,29 +84,13 @@ for msg in st.session_state.messages:
     if type(msg) == HumanMessage:
         st.chat_message("user").write(msg.content)
 
-
-if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Database!"):
-    st.session_state.messages.append(HumanMessage(content=user_query))
-    st.chat_message("user").write(user_query)
-
-    with st.chat_message("assitent"):
-        msg_placeholder = st.empty()  # Placeholder for visually updating AI's response after events end
-        # create a new placeholder for streaming messages and other events, and give it context
-        st_callback = get_streamlit_cb(st.empty())
-        response = agent_executor.invoke({"messages": [{"role": "user", "content": user_query}]}, config={"callbacks": [st_callback]})
-        last_msg = response["messages"][-1].content
-        st.session_state.messages.append(AIMessage(content=last_msg))  # Add that last message to the st_message_state
-        msg_placeholder.write(last_msg) # visually refresh the complete response after the callback container
-
 ### bacth inference ###
-#if user_query:
-#    st.session_state.messages.append({"role": "user", "content": user_query})
-#    st.chat_message("user").write(user_query)
-
-    
-    #with st.chat_message("assistant"):
-    #    #st_cb = StreamlitCallbackHandler(st.container())
-    #    output = agent_executor.invoke({"messages": [{"role": "user", "content": user_query}]}) #,callbacks=[st_cb]
-    #    response = output['messages'][-1].content  
-    #    st.session_state.messages.append({"role": "assistant", "content": response})
-    #    st.write(response)
+if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Database!"):
+   st.session_state.messages.append(HumanMessage(content=user_query))
+   st.chat_message("user").write(user_query)
+   
+   with st.chat_message("assistant"):
+        output = run_agent(user_query, agent, 'values')
+        response = output['messages'][-1].content  
+        st.write(response)
+        st.session_state.messages.append(AIMessage(content=response))
