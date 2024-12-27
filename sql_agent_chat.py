@@ -16,6 +16,8 @@ load_dotenv()
 ### Page initialization ###
 st.set_page_config(page_title="SQL Agent Chat", page_icon="🗁⌨")
 st.title("🗁⌨ SQl DB Agent")
+st.write("---")
+st.write("")
 
 ### Functions ###
 def build_react_sql_agent(sql_database: SQLDatabase,
@@ -48,6 +50,7 @@ def run_agent(user_query: str,
                         stream_mode=stream_mode,
                         config=config)
 
+
 @st.cache_resource(show_spinner = False)
 def initial_loading(database_uri):
     with st.spinner("Loading Database and initializing agent..."):
@@ -56,7 +59,7 @@ def initial_loading(database_uri):
 
     return agent
 
-# ### GLOBAL VARIABLES ###
+### Objects initialization ###
 DATABASE_USER = os.getenv("DATABASE_USER")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
 DATABASE_ENDPOINT = os.getenv("DATABASE_ENDPOINT")
@@ -67,20 +70,6 @@ mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,
                                                              DATABASE_ENDPOINT, 
                                                              DATABASE_SCHEMA)   
 
-
-### CONFIGURATIONS ###
-# db = SQLDatabase.from_uri(mysql_uri)
-# llm = AzureChatOpenAI(temperature=0)
-# toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-# tools = toolkit.get_tools()
-
-# system_message = (hub
-#                  .pull("langchain-ai/sql-agent-system-prompt")
-#                  .format(dialect=db.dialect, top_k=5))
-
-# agent_executor = create_react_agent(llm, 
-#                                     tools, 
-#                                     state_modifier=system_message)
 
 agent = initial_loading(mysql_uri)
 intro_msg = "Hi! I'm your SQL Assistent. What would you like to know?"
