@@ -90,7 +90,8 @@ if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Dat
    st.chat_message("user").write(user_query)
    
    with st.chat_message("assistant"):
-        output = run_agent(user_query, agent, 'values')
-        response = output['messages'][-1].content  
-        st.write(response)
-        st.session_state.messages.append(AIMessage(content=response))
+        with st.spinner("Search for information..."):
+            output = run_agent(user_query, agent, 'values')
+            response = output['messages'][-1].content  
+            st.write(response)
+            st.session_state.messages.append(AIMessage(content=response))
