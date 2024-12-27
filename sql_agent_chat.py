@@ -60,10 +60,10 @@ def initial_loading(database_uri):
     return agent
 
 ### Objects initialization ###
-DATABASE_USER = os.environ["DATABASE_USER"]
-USER_PASSWORD = os.environ["USER_PASSWORD"]
-DATABASE_ENDPOINT = os.environ["DATABASE_ENDPOINT"]
-DATABASE_SCHEMA = os.environ["DATABASE_SCHEMA"]
+DATABASE_USER = os.getenv("DATABASE_USER")
+USER_PASSWORD = os.getenv("USER_PASSWORD")
+DATABASE_ENDPOINT = os.getenv("DATABASE_ENDPOINT")
+DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA")
 
 mysql_uri = "mysql+mysqlconnector://{}:{}@{}:3306/{}".format(DATABASE_USER,  
                                                              USER_PASSWORD,  
