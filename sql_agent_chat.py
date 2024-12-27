@@ -49,7 +49,7 @@ intro_msg = "Hi! I'm your SQL Assistent. What would you like to know?"
 
 ### Chat Initialization ###
 
-if "messages" not in st.session_state or st.sidebar.button("Clear message history"):
+if "messages" not in st.session_state:
     st.session_state["messages"] = [AIMessage(content=intro_msg)]
 
 for msg in st.session_state.messages:
@@ -59,28 +59,26 @@ for msg in st.session_state.messages:
         st.chat_message("user").write(msg.content)
 
 
-if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Database!"):
-    st.session_state.messages.append(HumanMessage(content=user_query))
-    st.chat_message("user").write(user_query)
+# if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Database!"):
+#     st.session_state.messages.append(HumanMessage(content=user_query))
+#     st.chat_message("user").write(user_query)
 
-    with st.chat_message("assitent"):
-        msg_placeholder = st.empty()  # Placeholder for visually updating AI's response after events end
-        # create a new placeholder for streaming messages and other events, and give it context
-        st_callback = get_streamlit_cb(st.empty())
-        response = agent_executor.invoke({"messages": [{"role": "user", "content": user_query}]}, config={"callbacks": [st_callback]})
-        last_msg = response["messages"][-1].content
-        st.session_state.messages.append(AIMessage(content=last_msg))  # Add that last message to the st_message_state
-        msg_placeholder.write(last_msg) # visually refresh the complete response after the callback container
+#     with st.chat_message("assitent"):
+#         msg_placeholder = st.empty()  # Placeholder for visually updating AI's response after events end
+#         # create a new placeholder for streaming messages and other events, and give it context
+#         st_callback = get_streamlit_cb(st.empty())
+#         response = agent_executor.invoke({"messages": [{"role": "user", "content": user_query}]}, config={"callbacks": [st_callback]})
+#         last_msg = response["messages"][-1].content
+#         st.session_state.messages.append(AIMessage(content=last_msg))  # Add that last message to the st_message_state
+#         msg_placeholder.write(last_msg) # visually refresh the complete response after the callback container
 
 ### bacth inference ###
-#if user_query:
-#    st.session_state.messages.append({"role": "user", "content": user_query})
-#    st.chat_message("user").write(user_query)
-
-    
-    #with st.chat_message("assistant"):
-    #    #st_cb = StreamlitCallbackHandler(st.container())
-    #    output = agent_executor.invoke({"messages": [{"role": "user", "content": user_query}]}) #,callbacks=[st_cb]
-    #    response = output['messages'][-1].content  
-    #    st.session_state.messages.append({"role": "assistant", "content": response})
-    #    st.write(response)
+if user_query := st.chat_input(placeholder="Ask me anything related to a SQL Database!"):
+   st.session_state.messages.append(HumanMessage(content=user_query))
+   st.chat_message("user").write(user_query)
+   
+   with st.chat_message("assistant"):
+        output = agent_executor.invoke({"messages": st.session_state.messages}) 
+        response = output['messages'][-1].content  
+        st.write(response)
+        st.session_state.messages.append(AIMessage(content=response))
